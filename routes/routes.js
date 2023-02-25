@@ -1,16 +1,24 @@
-const express = require("express");
-const bcrypt = require("bcrypt");
-const knex = require("knex")(require("../knexfile"));
-const ejs = require("ejs");
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+import express from "express";
+import bcrypt from "bcrypt";
+import knex from "knex";
+import knexConfig from "../knexfile.js";
+import ejs from "ejs";
+import jwt from "jsonwebtoken";
+import authMiddleware from "../middlewares/auth.js";
+import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const router = express.Router();
 
 router.use(express.urlencoded({ extended: true }));
+router.use(cookieParser());
+
+const db = knex(knexConfig);
 
 async function getUserByEmail(email) {
-	const user = await knex("users").where({ email }).first();
+	const user = await db("users").where({ email }).first();
 	return user;
 }
 
@@ -18,19 +26,35 @@ async function comparePassword(password, hash) {
 	return await bcrypt.compare(password, hash);
 }
 
-function generateToken(user) {
+function generateToken(user, res) {
 	const payload = {
 		id: user.id,
 		email: user.email,
 	};
-	return jwt.sign(payload, process.env.JWT_SECRET, {
+	const token = jwt.sign(payload, process.env.JWT_SECRET, {
 		expiresIn: "1 day",
 	});
+
+	res.cookie("token", token, { httpOnly: true });
+
+	return token;
 }
 
-// Route pour afficher le formulaire de création d'utilisatrseur
+router.get("/", (req, res) => {
+	res.send("Welcome to the CRM API");
+});
 
-// Route pour créer un nouvel utilisateur dans la base de données
+router.get("/users/new", (req, res) => {
+	ejs.renderFile("./views/users/new.ejs", (err, html) => {
+		if (err) {
+			console.error(err);
+			res.status(500).send("Internal server error");
+		} else {
+			res.send(html);
+		}
+	});
+});
+
 router.post("/users", async (req, res) => {
 	try {
 		const { username, password, email } = req.body;
@@ -38,9 +62,9 @@ router.post("/users", async (req, res) => {
 		const users = {
 			username,
 			password: hashedPassword,
-			email: email,
+			email,
 		};
-		await knex("users").insert(users);
+		await db("users").insert(users);
 		res.redirect("/users/new");
 	} catch (error) {
 		console.error(error);
@@ -59,8 +83,9 @@ router.post("/login", async (req, res) => {
 		if (!match) {
 			return res.status(401).send("Invalid email or password");
 		}
-		const token = generateToken(user);
-		res.send({ token });
+
+		const token = generateToken(user, res);
+		res.send("Logged in successfully");
 	} catch (error) {
 		console.error(error);
 		res.status(500).send("Internal server error");
@@ -68,30 +93,18 @@ router.post("/login", async (req, res) => {
 });
 
 router.get("/users/login", (req, res) => {
-	ejs.renderFile(
-		__dirname + "/../views/users/login.ejs",
-		(err, html) => {
-			if (err) {
-				console.error(err);
-				res.status(500).send("Internal server error");
-			} else {
-				res.send(html);
-			}
+	ejs.renderFile("./views/users/login.ejs", (err, html) => {
+		if (err) {
+			console.error(err);
+			res.status(500).send("Internal server error");
+		} else {
+			res.send(html);
 		}
-	);
+	});
 });
 
-router.get("/users/new", (req, res) => {
-	ejs.renderFile(
-		__dirname + "/../views/users/new.ejs",
-		(err, html) => {
-			if (err) {
-				console.error(err);
-				res.status(500).send("Internal server error");
-			} else {
-				res.send(html);
-			}
-		}
-	);
+router.get("/protected", authMiddleware, (req, res) => {
+	res.send("You are authorized to access this resource.");
 });
-module.exports = router;
+
+export default router;

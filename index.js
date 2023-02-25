@@ -1,6 +1,11 @@
-const express = require("express");
+import express from "express";
+import routes from "./routes/routes.js";
+import morgan from "morgan";
+
 const app = express();
-const routes = require("./routes/routes");
+
+// Ajouter le middleware morgan
+app.use(morgan("dev"));
 
 // Configuration de l'application Express
 app.use(express.urlencoded({ extended: true }));
