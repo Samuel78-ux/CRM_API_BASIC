@@ -19,5 +19,8 @@
     "morgan": "^1.10.0",
     "pg": "^8.9.0",
     "uuidv4": "^6.2.13"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.2.7"
   }
 }

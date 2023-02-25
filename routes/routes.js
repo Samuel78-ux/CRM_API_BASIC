@@ -29,16 +29,6 @@ function generateToken(user) {
 }
 
 // Route pour afficher le formulaire de création d'utilisatrseur
-router.get("/users/new", (req, res) => {
-	ejs.renderFile(__dirname + "/../views/users/new.ejs", (err, html) => {
-		if (err) {
-			console.error(err);
-			res.status(500).send("Internal server error");
-		} else {
-			res.send(html);
-		}
-	});
-});
 
 // Route pour créer un nouvel utilisateur dans la base de données
 router.post("/users", async (req, res) => {
@@ -76,15 +66,32 @@ router.post("/login", async (req, res) => {
 		res.status(500).send("Internal server error");
 	}
 });
+
 router.get("/users/login", (req, res) => {
-	ejs.renderFile(__dirname + "/../views/users/login.ejs", (err, html) => {
-		if (err) {
-			console.error(err);
-			res.status(500).send("Internal server error");
-		} else {
-			res.send(html);
+	ejs.renderFile(
+		__dirname + "/../views/users/login.ejs",
+		(err, html) => {
+			if (err) {
+				console.error(err);
+				res.status(500).send("Internal server error");
+			} else {
+				res.send(html);
+			}
 		}
-	});
+	);
 });
 
+router.get("/users/new", (req, res) => {
+	ejs.renderFile(
+		__dirname + "/../views/users/new.ejs",
+		(err, html) => {
+			if (err) {
+				console.error(err);
+				res.status(500).send("Internal server error");
+			} else {
+				res.send(html);
+			}
+		}
+	);
+});
 module.exports = router;
